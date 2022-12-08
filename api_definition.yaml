@@ -1,0 +1,483 @@
+openapi: 3.0.0
+info:
+  version: '0.0.1'
+  title: 'Weather API'
+  license:
+    name: MIT
+servers:
+  - url: 'localhost:8080'
+paths:
+  /request_api_key:
+    post:
+      summary: 'Request a new API key'
+      description: 'Request a new API key for authentication'
+      responses:
+        '200':
+          description: 'API key successfully created'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  api_key:
+                    type: string
+                    # Google OpenAPI data types => String type can have no format. Quote: "(string) 
+                    # format is an open value, so you can use any formats, even not those defined by
+                    # the OpenAPI Specification", i.e., can make up format.
+                    format: objectId
+                    example: '63454e554d07420e502c5299'
+                  access_created_date:
+                    # Google OpenAPI data types => find out that date is stored as string type & 
+                    # date-time format.
+                    type: string
+                    format: date-time
+                    example: '2022-08-24T00:16:37.081+00:00'
+                  role:
+                    type: string
+                    format: role
+                    example: client
+        '500':
+          description: 'Failed to create API key'
+          content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    code:
+                      type: integer
+                      example: 500
+                    message:
+                      type: string
+                      example: 'Failed to create an API key. Generated error string'
+        # Default response message in case encountering any undefined errors
+        default:
+            description: 'Unexpected error'
+  /max_precipitation_by_date_range:
+    get:
+      summary: 'Return a single value, using the GET method'
+      description: 'Find the maximum precipitation recorded in the last 5 years'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                api_key:
+                  type: string
+                  format: objectId
+                  example: '63454e554d07420e502c5299'
+      responses:
+        '200':
+          description: 'Maximum precipitation record successfully retrieved'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: 'Maximum precipitation record successfully retrieved, which is 1.234 mm/h.'
+        '500':
+          description: 'Failed to retrieve maximum precipitation record'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 500
+                  message:
+                    type: string
+                    example: 'Failed to retrieve maximum precipitation record. Generated error string'
+        default:
+          description: 'Unexpected error'
+  /weather_metrics_at_date_hour:
+    get:
+      summary: 'Return a collection of values, using the GET method'
+      description: 'Find the temperature, atmospheric pressure, radiation and precipitation recorded by a specific station at a given date and time (hour)'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                api_key:
+                  type: string
+                  format: objectId
+                  example: '63454e554d07420e502c5299'
+                'Specified Year':
+                  type: integer
+                  example: 2022
+                'Specified Month':
+                  type: integer
+                  example: 9
+                'Specified Day':
+                  type: integer
+                  example: 20
+                'Specified Hour (24-hour)':
+                  type: integer
+                  example: 9                                    
+      responses:
+        '200':
+          description: 'Weather metrics successfully retrieved'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: 'Weather metrics successfully retrieved.'
+                  message2:
+                    type: array
+                    items: 
+                      type: object
+                      properties:
+                        'Temperature (C)':
+                          # MongoDB would decide if the type is integer or double based on if there
+                          # is any decimal point. So the format here would be either integer or
+                          # double. To solve this, leave out the format so it accept both.
+                          type: number
+                        'Atmospheric Pressure (kPa)':
+                          type: number
+                        'Precipitation (mm/h)':
+                          type: number
+                        'Solar Radiation (W/m2)':
+                          type: number
+                    example:
+                      - 'Temperature (C)': 10.2
+                        'Atmospheric Pressure (kPa)': 101.49
+                        'Precipitation (mm/h)': 2
+                        'Solar Radiation (W/m2)': 200
+                      - 'Temperature (C)': 10.2
+                        'Atmospheric Pressure (kPa)': 101.49
+                        'Precipitation (mm/h)': 5
+                        'Solar Radiation (W/m2)': 500
+        '500':
+          description: 'Failed to retrieve weather metrics.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 500
+                  message:
+                    type: string
+                    example: 'Failed to retrieve weather metrics. Generated error string'
+        default:
+          description: 'Unexpected error'
+  /add_reading:
+    post:
+      summary: 'Add a value to a collection using the POST method'
+      description: 'Insert a new weather reading document with a Device Name (and implicitly a weather station)'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                api_key:
+                  type: string
+                  format: objectId
+                  example: '63454e554d07420e502c5299'
+                'Device Name':
+                  type: string
+                  example: 'DLB ATM41 TEST'
+      responses:
+        '200':
+          description: 'Reading record successfully added.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: 'Reading record successfully added.'
+                  message2:
+                    type: object
+                    properties:
+                      acknowledged:
+                        type: boolean
+                        example: true
+                      insertedId:
+                        type: string
+                        format: ObjectId
+                        example: '63454e554d07420e502c5299'
+        '500':
+          description: 'Failed to add reading record'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 500
+                  message:
+                    type: string
+                    example: 'Failed to add reading record. Generated error string'
+        default:
+          description: 'Unexpected error'
+  /fahrenheit_conversion:
+    put:
+      summary: 'Update an existing value using the PUT method'
+      description: 'Update the Fahrenheit reading field of a single reading document if the field exists, otherwise create the field'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                api_key:
+                  type: string
+                  format: objectId
+                  example: '63454e554d07420e502c5299'
+                'reading_id':
+                  type: string
+                  format: objectId
+                  example: '63454e554d07420e502c5299'
+      responses:
+        '200':
+          description: 'Temperature (F) field successfully added.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: 'Temperature (F) field successfully added.'
+                  message2:
+                    type: object
+                    properties:
+                      acknowledged:
+                        type: boolean
+                        example: true
+                      modifiedCount:
+                        type: integer
+                        example: 1
+                      upsertedId:
+                        type: string
+                        format: ObjectId
+                        nullable: true
+                        example: '63454e554d07420e502c5299'
+                      upsertedCount:
+                        type: integer
+                        example: 0
+                      matchedCount:
+                        type: integer
+                        example: 1
+        '500':
+          description: 'Failed to add Temperature (F) field.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 500
+                  message:
+                    type: string
+                    example: 'Failed to add Temperature (F) field. Generated error string'
+        default:
+          description: 'Unexpected error'
+    patch:
+      summary: 'Update an existing value using the PATCH method'
+      description: 'Update the Fahrenheit reading field of a single reading document if the field exists, otherwise create the field'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                api_key:
+                  type: string
+                  format: objectId
+                  example: '63454e554d07420e502c5299'
+                'reading_id':
+                  type: string
+                  format: objectId
+                  example: '63454e554d07420e502c5299'
+      responses:
+        '200':
+          description: 'Temperature (F) field successfully added.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: 'Temperature (F) field successfully added.'
+                  message2:
+                    type: object
+                    properties:
+                      acknowledged:
+                        type: boolean
+                        example: true
+                      modifiedCount:
+                        type: integer
+                        example: 1
+                      upsertedId:
+                        type: string
+                        format: ObjectId
+                        nullable: true
+                        example: '63454e554d07420e502c5299'
+                      upsertedCount:
+                        type: integer
+                        example: 0
+                      matchedCount:
+                        type: integer
+                        example: 1
+        '500':
+          description: 'Failed to add Temperature (F) field.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 500
+                  message:
+                    type: string
+                    example: 'Failed to add Temperature (F) field. Generated error string'
+        default:
+          description: 'Unexpected error'
+  /delete_api_key:
+    delete:
+      summary: 'Remove a specified item from a collection using the DELETE method '
+      description: 'Delete an API key'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                api_key:
+                  type: string
+                  format: objectId
+                  example: '63454e554d07420e502c5299'
+      responses:
+        '200':
+          description: 'API key successfully deleted.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: 'API key successfully deleted.'
+                  message2:
+                    type: object
+                    properties:
+                      acknowledged:
+                        type: boolean
+                        example: true
+                      deletedCount:
+                        type: integer
+                        example: 1
+        '404':
+          description: 'API key submitted is not found.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 404
+                  message:
+                    type: string
+                    example: 'API key submitted is not found. Generated error string'
+        '501':
+          description: 'Failed to delete the API key.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 501
+                  message:
+                    type: string
+                    example: 'Failed to delete the API key. Generated error string'
+        default:
+          description: 'Unexpected error'
+security:
+  - BasicAuth: []
+#   /user:
+#     get:
+#       summary: 'Sample endpoint: Returns details about a particular user'
+#       operationId: listUser
+#       tags:
+#         - user
+#       parameters:
+#         - name: id
+#           in: query
+#           description: ID of the user
+#           required: true
+#           schema:
+#             type: integer
+#             format: int32
+#       responses:
+#         '200':
+#           description: 'Sample response: Details about a user by ID'
+#           headers:
+#             x-next:
+#               description: A link to the next page of responses
+#               schema:
+#                 type: string
+#           content:
+#             application/json:
+#               schema:
+#                 $ref: '#/components/schemas/User'
+#         default:
+#           description: Unexpected error
+#           content:
+#             application/json:
+#               schema:
+#                 $ref: '#/components/schemas/Error'
+# components:
+#   schemas:
+#     User:
+#       type: object
+#       required:
+#         - id
+#         - name
+#       properties:
+#         id:
+#           type: integer
+#           format: int64
+#         name:
+#           type: string
+#         tag:
+#           type: string
+#     Error:
+#       type: object
+#       required:
+#         - code
+#         - message
+#       properties:
+#         code:
+#           type: integer
+#           format: int32
+#         message:
+#           type: string
+#   securitySchemes:
+#     BasicAuth:
+#       type: http
+#       scheme: basic
